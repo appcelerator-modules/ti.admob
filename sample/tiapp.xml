@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ti:app 
+  xmlns:ti="http://ti.appcelerator.org">
+  <id>sample.admob</id>
+  <name>sample-admob</name>
+  <version>1.0</version>
+  <publisher>not specified</publisher>
+  <url/>
+  <description/>
+  <copyright>not specified</copyright>
+  <icon>appicon.png</icon>
+  <fullscreen>false</fullscreen>
+  <navbar-hidden>false</navbar-hidden>
+  <analytics>true</analytics>
+  <guid>1dc7f732-352d-426d-9ccc-b01ad8949b95</guid>
+  <property name="ti.ui.defaultunit" type="string">dp</property>
+  <property name="run-on-main-thread" type="bool">true</property>
+  <ios>
+    <enable-launch-screen-storyboard>true</enable-launch-screen-storyboard>
+    <use-app-thinning>true</use-app-thinning>
+    <plist>
+      <dict>
+        <key>UISupportedInterfaceOrientations~iphone</key>
+        <array>
+          <string>UIInterfaceOrientationPortrait</string>
+        </array>
+        <key>UISupportedInterfaceOrientations~ipad</key>
+        <array>
+          <string>UIInterfaceOrientationPortrait</string>
+          <string>UIInterfaceOrientationPortraitUpsideDown</string>
+          <string>UIInterfaceOrientationLandscapeLeft</string>
+          <string>UIInterfaceOrientationLandscapeRight</string>
+        </array>
+        <key>UIRequiresPersistentWiFi</key>
+        <false/>
+        <key>UIPrerenderedIcon</key>
+        <false/>
+        <key>UIStatusBarHidden</key>
+        <false/>
+        <key>UIStatusBarStyle</key>
+        <string>UIStatusBarStyleDefault</string>
+        <key>GADIsAdManagerApp</key>
+        <true/>
+      </dict>
+    </plist>
+  </ios>
+  <android 
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <manifest 
+      xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1">
+      <application>
+        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>
+      </application>
+    </manifest>
+  </android>
+  <modules>
+    <module version="5.0.1" platform="android">ti.admob</module>
+    <module version="3.0.0" platform="ios">ti.admob</module>
+    <module platform="android">com.appcelerator.aca</module>
+    <module platform="iphone">com.appcelerator.aca</module>
+    <module platform="commonjs">ti.cloud</module>
+  </modules>
+  <deployment-targets>
+    <target device="android">true</target>
+    <target device="ipad">true</target>
+    <target device="iphone">true</target>
+  </deployment-targets>
+  <sdk-version>9.1.0.v20200219062647</sdk-version>
+  <property name="appc-app-id" type="string">5ec26a7baf545d077d8a7b7f</property>
+  <property name="acs-authbase-url-development" type="string"></property>
+  <property name="acs-base-url-development" type="string">https://api.cloud.appcelerator.com</property>
+  <property name="acs-oauth-secret-development" type="string">WcOF8sFaZRMTieaVEfJmKjIqGEW8d5FI</property>
+  <property name="acs-oauth-key-development" type="string">JyCusPKTK90aZjRjnluBLcN49hrUoLcY</property>
+  <property name="acs-api-key-development" type="string">qa6CCjOqvVk22JxEYWvmZrmKOMV0JcYD</property>
+  <property name="acs-username-development" type="string">appc_app_user_dev</property>
+  <property name="acs-password-development" type="string">b38FLSaLPxOjdBbAAv</property>
+  <property name="acs-authbase-url-production" type="string"></property>
+  <property name="acs-base-url-production" type="string">https://api.cloud.appcelerator.com</property>
+  <property name="acs-oauth-secret-production" type="string">m8fNqvFt3xiMOhGzESPrzxttuzstpudc</property>
+  <property name="acs-oauth-key-production" type="string">ABUTa1mPd9YVzUcW0WLkIozU4U6GhRy3</property>
+  <property name="acs-api-key-production" type="string">qlaQOjCzPclsy0tc3tdoCBFEtPA8yfbv</property>
+  <property name="acs-username-production" type="string">appc_app_user</property>
+  <property name="acs-password-production" type="string">8ASCaXTGeQdLo1p66w</property>
+  <property name="appc-org-id" type="string">100000675</property>
+  <property name="appc-creator-user-id" type="string">05f61c1f-f068-4c85-83e5-dfda1ef8095e</property>
+</ti:app>
