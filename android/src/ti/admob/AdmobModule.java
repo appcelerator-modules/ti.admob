@@ -24,6 +24,7 @@ import com.google.ads.mediation.admob.AdMobAdapter;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.identifier.AdvertisingIdClient;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -152,14 +153,15 @@ public class AdmobModule extends KrollModule
 	@Kroll.method
 	public void initialize(String appID)
 	{
-		MobileAds.initialize(TiApplication.getInstance(), appID);
+		MobileAds.initialize(TiApplication.getInstance());
 	}
 
 	@Kroll.method
 	public int isGooglePlayServicesAvailable()
 	{
 		Log.w(TAG, "isGooglePlayServices in ti.admob is deprecated. Use the same method from ti.playservices instead.");
-		return GooglePlayServicesUtil.isGooglePlayServicesAvailable(TiApplication.getAppRootOrCurrentActivity());
+		return GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(
+			TiApplication.getAppRootOrCurrentActivity());
 	}
 
 	// clang-format off

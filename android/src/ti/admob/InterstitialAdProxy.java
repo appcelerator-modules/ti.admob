@@ -15,6 +15,7 @@ import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollProxy;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
+import org.appcelerator.titanium.TiApplication;
 
 @Kroll.proxy(creatableInModule = AdmobModule.class)
 public class InterstitialAdProxy extends KrollProxy
@@ -63,11 +64,36 @@ public class InterstitialAdProxy extends KrollProxy
 	public void load(@Kroll.argument(optional = true) KrollDict options)
 	{
 		AdRequest.Builder adRequestBuilder = AdmobModule.createRequestBuilderWithOptions(options);
-		interstitialAd.loadAd(adRequestBuilder.build());
+		if (!TiApplication.getInstance().runOnMainThread()) {
+			getActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run()
+				{
+					interstitialAd.loadAd(new AdRequest.Builder().build());
+				}
+			});
+		} else {
+			this.interstitialAd.loadAd(new AdRequest.Builder().build());
+		}
 	}
 
 	@Kroll.method
 	public void show()
+	{
+		if (!TiApplication.getInstance().runOnMainThread()) {
+			getActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run()
+				{
+					showInterstitial();
+				}
+			});
+		} else {
+			showInterstitial();
+		}
+	}
+
+	private void showInterstitial()
 	{
 		if (this.interstitialAd.isLoaded()) {
 			this.interstitialAd.show();

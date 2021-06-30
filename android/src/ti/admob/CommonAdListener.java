@@ -8,6 +8,7 @@
 package ti.admob;
 
 import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.LoadAdError;
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollProxy;
 import org.appcelerator.kroll.common.Log;
@@ -36,10 +37,10 @@ public class CommonAdListener extends AdListener
 	}
 
 	@Override
-	public void onAdFailedToLoad(int errorCode)
+	public void onAdFailedToLoad(LoadAdError errorCode)
 	{
 		super.onAdFailedToLoad(errorCode);
-		Log.d(this.sourceTag, "onAdFailedToLoad(): " + errorCode);
+		Log.d(this.sourceTag, "onAdFailedToLoad(): " + errorCode.toString());
 		KrollDict eventData = new KrollDict();
 		eventData.put("errorCode", String.valueOf(errorCode));
 		warnForDeprecatedConstant(AdmobModule.AD_NOT_RECEIVED, AdmobModule.EVENT_AD_FAIL);
