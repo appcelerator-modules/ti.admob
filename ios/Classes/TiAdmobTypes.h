@@ -7,7 +7,8 @@
 
 #import <Foundation/Foundation.h>
 
-NS_ENUM(NSUInteger, TiAdmobAdType){
+typedef NS_ENUM(NSUInteger, TiAdmobAdType){
   TiAdmobAdTypeBanner = 0,
-  TiAdmobAdTypeInterstitial
+  TiAdmobAdTypeInterstitial,
+  TiAdmobAdTypeRewardedVideo
 };

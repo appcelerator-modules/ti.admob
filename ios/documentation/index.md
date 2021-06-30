@@ -122,11 +122,42 @@ identifiers. Debug features are always enabled for simulators.
 
 Debug geography. Used for debug devices only.
 
+## Supported Ads
+
+Other than the default banner ad, ti.admob has support for the following ad types and features:
+
 ### Interstitials
 
 To receive an interstitional ad, you need to call `ad.receive()` instead of adding it to the viewe hierarchy.
 It fires the `didReceiveAd` event if the  ad was successfully received, the `didFailToReceiveAd` event otherwise. Please check
 the example for a detailed example of different banner types.
+
+### Rewarded Video
+
+Since version 2.4.2 you can use Admob Rewarded Video ads. This is similar to interstitials with the addition of getting a reward after watching an ad video.
+
+You create a rewarded video ad by specifying `Admob.AD_TYPE_REWARDED_VIDEO` as the `adType`. The first video will be automatically pre-loaded after creating the view and calling `receive`. To know when a video is completely loaded you can use the `adloaded` event. To show a rewarded video add call the `showRewardedVideo` method. Loading another video can be started with the `loadRewardedVideo(adUnitId)` method on the same instance.
+
+```js
+var rewardedVideo = Admob.createView({
+  adType: Admob.AD_TYPE_REWARDED_VIDEO,
+  adUnitId: '<<YOUR ADD UNIT ID HERE>>', // You can get your own at http: //www.admob.com/
+});
+rewardedVideo.receive()
+rewardedVideo.addEventListener('adloaded', function(e) {
+  rewardedVideo.showRewardedVideo();
+});
+rewardedVideo.addEventListener('adrewarded', function (reward) {
+  Ti.API.debug(`Received reward! type: ${reward.type}, amount: ${reward.amount}`);
+  // pre load next rewarded video
+  // rewardedVideo.loadRewardedVideo('add-unit-id');
+});
+rewardedVideo.addEventListener('adclosed', function(e) {
+  Ti.API.debug('No gold for you!');
+});
+```
+
+Please see the examples for a complete implementation.
 
 ### iAd
 
@@ -137,6 +168,22 @@ Starting in 2.1.0 you can use the included iAd adapter to turn on the iAd mediat
 ### Support the Facebook Audience Network adapter
 
 Starting in 2.4.0 you can use the included Facebook Audience Network adapter to turn on the mediation in your Admob account. Here you do not have to do anything :) You only need to configure mediation in your AdMob and Facebbok accounts by following the official guide: https://developers.google.com/admob/ios/mediation/facebook
+
+### How to update PersonalizedAdConsent
+
+Starting in 2.4.4 iOS ti.admob use PersonalizedAdConsent framework Version 1.0.5 (removed all references to the deprecated **UIWebView** by using new **WKWebView**).
+The new realeases are available on https://github.com/googleads/googleads-consent-sdk-ios/releases.
+To add a new version of PersonalizedAdConsent you need to:
+1) Download the release zip file (e.g. https://github.com/googleads/googleads-consent-sdk-ios/archive/v1.0.5.zip)
+2) Open the ti.admob project https://github.com/astrovic/ti.admob/tree/master/ios/admob.xcodeproj with Xcode
+3) Unpack the googleads-consent-sdk-ios-X-X-X.zip file and drag the PersonalizedAdConsent.xcodeproj file to Xcode, inside "admob"
+4) In the Build Phases tab, go to Link Binary With Libraries, and click on the + button.
+5) Select PersonalizedAdConsent.framework and click on the Add button.
+6) On Link Binary With Libraries, right click PersonalizedAdConsent.framework and go to Show in finder.
+7) Copy the entire PersonalizedAdConsent.framework folder into the ti.admob project in https://github.com/astrovic/ti.admob/tree/master/ios/platform (replacing the existing one)
+8) Now you can build the module :)
+
+<img src="http://astrovicapps.com/git_source/tiadmob/PersonalizedAdConsent.png" width="300px" style="float:left; margin-right:1em;">
 
 ## Constants
 

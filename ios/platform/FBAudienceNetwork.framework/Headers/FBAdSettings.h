@@ -120,6 +120,13 @@ FB_CLASS_EXPORT FB_SUBCLASSING_RESTRICTED @interface FBAdSettings : NSObject
 @property (class, nonatomic, copy, readonly) NSString *routingToken;
 
 /**
+ User's consent for advertiser tracking.
+
+ The setter API only works in iOS14 or above and won't take effect in iOS13 or below.
+ */
++ (void)setAdvertiserTrackingEnabled:(BOOL)advertiserTrackingEnabled;
+
+/**
  Returns test mode on/off.
  */
 + (BOOL)isTestMode;
@@ -133,8 +140,6 @@ FB_CLASS_EXPORT FB_SUBCLASSING_RESTRICTED @interface FBAdSettings : NSObject
   Adds a test device.
 
  @param deviceHash The id of the device to use test mode, can be obtained from debug log or testDeviceHash
-
-
 
  Copy the current device Id from debug log and add it as a test device to get test ads. Apps
  running on emulator will automatically get test ads. Test devices should be added before loadAd is called.
@@ -196,9 +201,7 @@ FB_CLASS_EXPORT FB_SUBCLASSING_RESTRICTED @interface FBAdSettings : NSObject
 /**
   Sets the url prefix to use when making ad requests.
 
-
-
- This method should never be used in production.
+  This method should never be used in production.
  */
 + (void)setUrlPrefix:(nullable NSString *)urlPrefix;
 
@@ -211,6 +214,24 @@ FB_CLASS_EXPORT FB_SUBCLASSING_RESTRICTED @interface FBAdSettings : NSObject
   Sets the current SDK logging level
  */
 + (void)setLogLevel:(FBAdLogLevel)level;
+
+/// Data processing options.
+/// Please read more details at https://developers.facebook.com/docs/marketing-apis/data-processing-options
+///
+/// @param options Processing options you would like to enable for a specific event. Current accepted value is LDU for
+/// Limited Data Use.
+/// @param country A country that you want to associate to this data processing option. Current accepted values are 1,
+/// for the United States of America, or 0, to request that we geolocate that event.
+/// @param state A state that you want to associate with this data processing option. Current accepted values are 1000,
+/// for California, or 0, to request that we geolocate that event.
++ (void)setDataProcessingOptions:(NSArray<NSString *> *)options country:(NSInteger)country state:(NSInteger)state;
+
+/// Data processing options.
+/// Please read more details at https://developers.facebook.com/docs/marketing-apis/data-processing-options
+///
+/// @param options Processing options you would like to enable for a specific event. Current accepted value is LDU for
+/// Limited Data Use.
++ (void)setDataProcessingOptions:(NSArray<NSString *> *)options;
 
 @end
 

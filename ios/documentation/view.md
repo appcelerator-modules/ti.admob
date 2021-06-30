@@ -150,3 +150,42 @@ Store).
 Called when the user clicks on the buy button of an in-app purchase ad. After the receiver handles the purchase, it must 
 call the GADInAppPurchase object's reportPurchaseStatus: method.
 
+### adrewarded
+
+Fired when the reward based video ad has rewarded the user.
+
+#### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `reward` | `Object` | Reward information for rewarded video ads. |
+| `reward.type` | `String` | Type of the reward. |
+| `reward.amount` | `Number` | Amount rewarded to the user. |
+
+### adloaded
+
+Fired when a reward based video ad was received. From this point on you can open the video using `showRewardedVideo()`.
+
+### adopened
+
+Fired when the reward based video ad opened.
+
+### videostarted
+
+Fired when the reward based video ad started playing.
+
+### videocompleted
+
+Fired when the reward based video ad completed playing.
+
+### adclosed
+
+Fired when the reward based video ad closed.
+
+### adleftapplication
+
+Fires when the reward based video ad will leave the application.
+
+### adfailedtoload
+
+Fired when the reward based video ad failed to load.

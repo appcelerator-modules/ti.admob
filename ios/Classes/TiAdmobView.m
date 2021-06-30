@@ -14,42 +14,14 @@
 
 #pragma mark - Ad Lifecycle
 
-- (GADRequest *)request
-{
-  if (request == nil) {
-    request = [[GADRequest request] retain];
-  }
-
-  return request;
-}
-
-- (GADInterstitial *)interstitial
-{
-  if (interstitial == nil) {
-    id debugEnabled = [[self proxy] valueForKey:@"debugEnabled"];
-    id adUnitId = [[self proxy] valueForKey:@"adUnitId"];
-
-    if (debugEnabled != nil && [TiUtils boolValue:debugEnabled def:NO]) {
-      adUnitId = [self exampleAdId];
-    }
-
-    interstitial = [[GADInterstitial alloc] initWithAdUnitID:[TiUtils stringValue:adUnitId]];
-    [interstitial setDelegate:self];
-    [interstitial setInAppPurchaseDelegate:self];
-  }
-
-  return interstitial;
-}
-
 - (GADBannerView *)bannerView
 {
   if (bannerView == nil) {
     // Create the view with dynamic width and height specification.
-    bannerView = [[GADBannerView alloc] initWithAdSize:[self generateHeight]];
+    bannerView = [[GADBannerView alloc] initWithAdSize:[self generateAdSize]];
 
     // Set the delegate to receive the internal events
     [bannerView setDelegate:self];
-    [bannerView setInAppPurchaseDelegate:self];
 
     // Let the runtime know which UIViewController to restore after taking
     // the user wherever the ad goes and add it to the view hierarchy.
@@ -80,9 +52,17 @@
     [bannerView removeFromSuperview];
   }
 
-  RELEASE_TO_NIL(request);
+  if (interstitialAd) {
+    interstitialAd.fullScreenContentDelegate = nil;
+  }
+  
+  if (rewardedAd) {
+    rewardedAd.fullScreenContentDelegate = nil;
+  }
+
   RELEASE_TO_NIL(bannerView);
-  RELEASE_TO_NIL(interstitial);
+  RELEASE_TO_NIL(interstitialAd);
+  RELEASE_TO_NIL(rewardedAd);
 
   [super dealloc];
 }
@@ -94,11 +74,19 @@
   ENSURE_UI_THREAD_0_ARGS
   id adType = [[self proxy] valueForKey:@"adType"];
   ENSURE_TYPE_OR_NIL(adType, NSNumber);
+  
+  id debugEnabled = [self.proxy valueForKey:@"debugEnabled"];
+  adUnitId = [self.proxy valueForKey:@"adUnitId"];
+  if (debugEnabled != nil && [TiUtils boolValue:debugEnabled def:NO]) {
+    adUnitId = self.exampleAdId;
+  }
 
   if ([TiUtils intValue:adType def:TiAdmobAdTypeBanner] == TiAdmobAdTypeBanner) {
-    [[self bannerView] loadRequest:[self request]];
-  } else {
-    [[self interstitial] loadRequest:[self request]];
+    [self loadBanner];
+  } else if ([TiUtils intValue:adType def:TiAdmobAdTypeBanner] == TiAdmobAdTypeInterstitial) {
+    [self loadInterstitial];
+  } else if ([TiUtils intValue:adType def:TiAdmobAdTypeBanner] == TiAdmobAdTypeRewardedVideo) {
+    [self loadRewardedVideoWithAdUnitID:adUnitId];
   }
 }
 
@@ -123,33 +111,19 @@
 - (void)setKeywords_:(id)value
 {
   if ([value isKindOfClass:[NSString class]]) {
-    [[self request] setKeywords:@[ [TiUtils stringValue:value] ]];
+    [[GADRequest request] setKeywords:@[ [TiUtils stringValue:value] ]];
     NSLog(@"[WARN] Ti.AdMob: The property `keywords` with string values is deprecated. Please use an array of string values instead.");
   } else if ([value isKindOfClass:[NSArray class]]) {
-    [[self request] setKeywords:value];
+    [[GADRequest request] setKeywords:value];
   } else {
     NSLog(@"[ERROR] Ti.AdMob: The property `keywords` must be either a String or an Array.");
   }
 }
 
-- (void)setDateOfBirth_:(id)value
-{
-  NSLog(@"[WARN] Ti.AdMmob: The \"birthday\" property has been deprecated by AdMob.");
-
-  ENSURE_TYPE(value, NSDate);
-  [[self request] setBirthday:value];
-}
-
-- (void)setTestDevices_:(id)value
-{
-  ENSURE_TYPE(value, NSArray);
-  [[self request] setTestDevices:value];
-}
-
 - (void)setAdBackgroundColor_:(id)value
 {
   id adType = [[self proxy] valueForKey:@"adType"];
-  if (adType != nil && [TiUtils boolValue:adType def:TiAdmobAdTypeBanner] == TiAdmobAdTypeInterstitial) {
+  if (adType != nil && [TiUtils boolValue:adType def:TiAdmobAdTypeBanner] != TiAdmobAdTypeBanner) {
     return;
   }
 
@@ -159,13 +133,13 @@
 - (void)setTagForChildDirectedTreatment_:(id)value
 {
   ENSURE_TYPE(value, NSNumber);
-  [[self request] tagForChildDirectedTreatment:[TiUtils boolValue:value]];
+  [GADMobileAds.sharedInstance.requestConfiguration tagForChildDirectedTreatment:[TiUtils boolValue:value]];
 }
 
 - (void)setRequestAgent_:(id)value
 {
   ENSURE_TYPE(value, NSString);
-  [[self request] setRequestAgent:[TiUtils stringValue:value]];
+  [[GADRequest request] setRequestAgent:[TiUtils stringValue:value]];
 }
 
 - (void)setContentURL_:(id)value
@@ -176,7 +150,7 @@
     NSLog(@"[WARN] Ti.AdMob: The value of the property `contentURL` looks invalid.");
   }
 
-  [[self request] setContentURL:[TiUtils stringValue:value]];
+  [[GADRequest request] setContentURL:[TiUtils stringValue:value]];
 }
 
 - (void)setExtras_:(id)args
@@ -185,44 +159,87 @@
 
   GADExtras *extras = [[GADExtras alloc] init];
   [extras setAdditionalParameters:args];
-  [[self request] registerAdNetworkExtras:extras];
+  [[GADRequest request] registerAdNetworkExtras:extras];
 
   RELEASE_TO_NIL(extras);
-}
-
-- (void)setGender_:(id)value
-{
-  NSLog(@"[WARN] Ti.AdMob: The \"gender\" property has been deprecated by AdMob.");
-
-  if ([value isKindOfClass:[NSString class]]) {
-    if ([value isEqualToString:@"male"]) {
-      [[self request] setGender:kGADGenderMale];
-    } else if ([value isEqualToString:@"female"]) {
-      [[self request] setGender:kGADGenderFemale];
-    } else if ([value isEqualToString:@"unknown"]) {
-      [[self request] setGender:kGADGenderUnknown];
-    }
-
-    return;
-  }
-
-  ENSURE_TYPE(value, NSNumber);
-  [[self request] setGender:[TiUtils intValue:value def:kGADGenderUnknown]];
 }
 
 - (void)setLocation_:(id)args
 {
   ENSURE_TYPE(args, NSDictionary);
 
-  [[self request] setLocationWithLatitude:[[args valueForKey:@"latitude"] floatValue]
+  [[GADRequest request] setLocationWithLatitude:[[args valueForKey:@"latitude"] floatValue]
                                 longitude:[[args valueForKey:@"longitude"] floatValue]
                                  accuracy:[[args valueForKey:@"accuracy"] floatValue]];
 }
 
+- (void)loadBanner
+{
+  [[self bannerView] loadRequest:[GADRequest request]];
+}
+
+- (void)loadRewardedVideoWithAdUnitID:(NSString *)adUnitID
+{
+  // Pass directly here because it can be overwritten by
+  // calling "loadRewardedVideo(adUnitId)" again
+  [GADRewardedAd loadWithAdUnitID:adUnitID request:[GADRequest request] completionHandler:^(GADRewardedAd * _Nullable _rewardedAd, NSError * _Nullable error) {
+    if (error) {
+      [self.proxy fireEvent:@"adfailedtoload" withObject:@{ @"message": error.localizedDescription }];
+      return;
+    }
+    
+    rewardedAd = [_rewardedAd retain];
+    rewardedAd.fullScreenContentDelegate = self;
+
+    [[self proxy] fireEvent:@"adloaded"];
+  }];
+}
+
+- (void)loadInterstitial
+{
+  [GADInterstitialAd loadWithAdUnitID:adUnitId
+                               request:[GADRequest request]
+                     completionHandler:^(GADInterstitialAd *ad, NSError *error) {
+     if (error) {
+       [self.proxy fireEvent:@"adfailedtoload" withObject:@{ @"message": error.localizedDescription }];
+       return;
+     }
+
+     interstitialAd = [ad retain];
+     interstitialAd.fullScreenContentDelegate = self;
+
+    [[self proxy] fireEvent:@"adloaded"];
+   }];
+}
+
 - (void)showInterstitial
 {
-  if ([[self interstitial] isReady]) {
-    [[self interstitial] presentFromRootViewController:[[[TiApp app] controller] topPresentedController]];
+  NSError *error;
+  BOOL canPresent = interstitialAd && [interstitialAd canPresentFromRootViewController:[[[TiApp app] controller] topPresentedController] error:&error];
+
+  if (canPresent) {
+    [interstitialAd presentFromRootViewController:[[[TiApp app] controller] topPresentedController]];
+  } else {
+    NSLog(@"[WARN] Cannot show interstitial: %@", error.localizedDescription);
+  }
+}
+
+- (void)showRewardedVideo
+{
+  NSError *error;
+  BOOL canPresent = rewardedAd && [rewardedAd canPresentFromRootViewController:[[[TiApp app] controller] topPresentedController] error:&error];
+
+  if (canPresent) {
+    [rewardedAd presentFromRootViewController:[[[TiApp app] controller] topPresentedController] userDidEarnRewardHandler:^{
+      NSDictionary *event = @{
+        @"amount": rewardedAd.adReward.amount,
+        @"type": rewardedAd.adReward.type
+      };
+
+      [[self proxy] fireEvent:@"adrewarded" withObject:event];
+    }];
+  } else {
+    NSLog(@"[WARN] Cannot show rewarded video: %@", error.localizedDescription);
   }
 }
 
@@ -238,6 +255,21 @@
   NSLog(@"[ERROR] Ti.AdMob: The property `testing` has been removed in 2.0.0, use `testDevices` instead.");
 }
 
+- (void)setGender_:(id)value
+{
+  DEPRECATED_REMOVED(@"Admob.gender", @"3.0.0", @"4.0.0 (removed by Google)")
+}
+
+- (void)setDateOfBirth_:(id)value
+{
+  DEPRECATED_REMOVED(@"Admob.dateOfBirth", @"3.0.0", @"4.0.0 (removed by Google)")
+}
+
+- (void)setTestDevices_:(id)value
+{
+  DEPRECATED_REMOVED(@"Admob.testDevices", @"4.0.0", @"4.0.0 (removed by Google)")
+}
+
 #pragma mark - Utilities
 
 // http://stackoverflow.com/a/3819561/5537752
@@ -248,173 +280,103 @@
   return [urlTest evaluateWithObject:candidate];
 }
 
-- (GADAdSize)generateHeight
+- (GADAdSize)generateAdSize
 {
   id height = [[self proxy] valueForKey:@"height"];
+  CGRect frame = self.frame;
+  // Here safe area is taken into account, hence the view frame is used after the
+  // view has been laid out.
+  if (@available(iOS 11.0, *)) {
+    frame = UIEdgeInsetsInsetRect(self.frame, self.safeAreaInsets);
+  }
+  CGFloat viewWidth = frame.size.width;
 
+  // We still support this, but per Google docs, we should primariy use
+  // the adaptive banner width (without a fixed height)
   if (height != nil) {
     return GADAdSizeFullWidthPortraitWithHeight([TiUtils floatValue:height]);
   }
 
-  return kGADAdSizeFluid;
+  return GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(viewWidth);
 }
 
 - (NSString *)exampleAdId
 {
-  return @"ca-app-pub-0123456789012345/0123456789";
+  return @"ca-app-pub-3940256099942544/1712485313";
 }
 
-+ (NSDictionary *)dictionaryFromBannerView:(GADBannerView *)bannerView
+#pragma mark - GADBannerViewDelegate
+
+- (void)bannerViewDidReceiveAd:(nonnull GADBannerView *)bannerView
 {
-  return @{
-    @"adUnitId" : bannerView.adUnitID
-  };
+  [self.proxy fireEvent:@"didReceiveAd" withObject:@{ @"adUnitId": adUnitId }];
 }
 
-+ (NSDictionary *)dictionaryFromInterstitial:(GADInterstitial *)interstitial
+- (void)bannerView:(nonnull GADBannerView *)bannerView
+    didFailToReceiveAdWithError:(nonnull NSError *)error
 {
-  return @{
-    @"adUnitId" : interstitial.adUnitID,
-    @"isReady" : NUMBOOL(interstitial.isReady)
-  };
+  [self.proxy fireEvent:@"didFailToReceiveAd" withObject:@{ @"adUnitId" : adUnitId, @"error" : error.localizedDescription }];
 }
 
-#pragma mark - Ad Delegate
-
-- (void)adViewDidReceiveAd:(GADBannerView *)view
+- (void)bannerViewDidRecordImpression:(nonnull GADBannerView *)bannerView
 {
-  if (![[self proxy] _hasListeners:@"didReceiveAd"]) {
-    return;
+  [self.proxy fireEvent:@"didRecordImpression" withObject:adUnitId];
+}
+
+// These three are only called if the banner ad triggers an in-app fullscreen view
+// (without leaving the app)
+
+- (void)bannerViewWillPresentScreen:(nonnull GADBannerView *)bannerView
+{
+  [self.proxy fireEvent:@"willPresentScreen" withObject:@{ @"adUnitId": adUnitId }];
+}
+
+- (void)bannerViewWillDismissScreen:(nonnull GADBannerView *)bannerView
+{
+  [self.proxy fireEvent:@"willDismissScreen" withObject:@{ @"adUnitId": adUnitId }];
+}
+
+- (void)bannerViewDidDismissScreen:(nonnull GADBannerView *)bannerView
+{
+  [self.proxy fireEvent:@"didDismissScreen" withObject:@{ @"adUnitId": adUnitId }];
+}
+
+#pragma mark - GADFullScreenContentDelegate
+
+// NOTE: I tried to map them as best as possible, but for example "adDidRecordImpression" is new
+// and "willPresentScreen" is not available anymore
+
+- (void)adDidRecordImpression:(id<GADFullScreenPresentingAd>)ad
+{
+  NSMutableDictionary *event = [NSMutableDictionary dictionaryWithDictionary:@{ @"adUnitId": adUnitId }];
+
+  if ([ad isKindOfClass:[GADRewardedAd class]]) {
+    GADAdReward *adReward = [(GADRewardedAd *)ad adReward];
+    event[@"amount"] = adReward.amount;
+    event[@"type"] = adReward.type;
   }
 
-  [self.proxy fireEvent:@"didReceiveAd" withObject:[TiAdmobView dictionaryFromBannerView:view]];
+  [self.proxy fireEvent:@"didRecordImpression" withObject:event];
 }
 
-- (void)adView:(GADBannerView *)view didFailToReceiveAdWithError:(GADRequestError *)error
+- (void)ad:(id<GADFullScreenPresentingAd>)ad didFailToPresentFullScreenContentWithError:(NSError *)error
 {
-  if (![[self proxy] _hasListeners:@"didFailToReceiveAd"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"didFailToReceiveAd"
-             withObject:@{ @"adUnitId" : view.adUnitID,
-               @"error" : error.localizedDescription }];
+  [self.proxy fireEvent:@"didFailToReceiveAd" withObject:@{ @"adUnitId" : adUnitId, @"error" : error.localizedDescription }];
 }
 
-- (void)adViewWillPresentScreen:(GADBannerView *)adView
+- (void)adDidPresentFullScreenContent:(id<GADFullScreenPresentingAd>)ad
 {
-  if (![[self proxy] _hasListeners:@"willPresentScreen"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"willPresentScreen" withObject:[TiAdmobView dictionaryFromBannerView:adView]];
+  [self.proxy fireEvent:@"didPresentScreen" withObject:@{ @"adUnitId": adUnitId }];
 }
 
-- (void)adViewWillDismissScreen:(GADBannerView *)adView
+- (void)adWillDismissFullScreenContent:(id<GADFullScreenPresentingAd>)ad
 {
-  if (![[self proxy] _hasListeners:@"willDismissScreen"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"willDismissScreen" withObject:[TiAdmobView dictionaryFromBannerView:adView]];
+  [self.proxy fireEvent:@"willDismissScreen" withObject:@{ @"adUnitId": adUnitId }];
 }
 
-- (void)adViewDidDismissScreen:(GADBannerView *)adView
+- (void)adDidDismissFullScreenContent:(id<GADFullScreenPresentingAd>)ad
 {
-  if (![[self proxy] _hasListeners:@"didDismissScreen"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"didDismissScreen" withObject:[TiAdmobView dictionaryFromBannerView:adView]];
-}
-
-- (void)adViewWillLeaveApplication:(GADBannerView *)adView
-{
-  if (![[self proxy] _hasListeners:@"willLeaveApplication"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"willLeaveApplication" withObject:[TiAdmobView dictionaryFromBannerView:adView]];
-}
-
-- (void)didReceiveInAppPurchase:(GADInAppPurchase *)purchase
-{
-  if (![[self proxy] _hasListeners:@"didReceiveInAppPurchase"]) {
-    return;
-  }
-
-  DebugLog(@"[WARN] Ti.Admob: The GADInAppPurchase class has been deprecated by Google and will be removed in the future.");
-
-  [self.proxy fireEvent:@"didReceiveInAppPurchase"
-             withObject:@{
-               @"productId" : purchase.productID,
-               @"quantity" : [NSNumber numberWithInteger:purchase.quantity]
-             }];
-}
-
-#pragma mark - Interstitial Delegate
-
-- (void)interstitialDidReceiveAd:(GADInterstitial *)ad
-{
-  if (![[self proxy] _hasListeners:@"didReceiveAd"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"didReceiveAd" withObject:[TiAdmobView dictionaryFromInterstitial:ad]];
-  [self showInterstitial];
-}
-
-- (void)interstitial:(GADInterstitial *)ad didFailToReceiveAdWithError:(GADRequestError *)error
-{
-  if (![[self proxy] _hasListeners:@"didFailToReceiveAd"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"didFailToReceiveAd"
-             withObject:@{ @"adUnitId" : ad.adUnitID,
-               @"error" : error.localizedDescription }];
-}
-
-- (void)interstitialWillPresentScreen:(GADInterstitial *)ad
-{
-  if (![[self proxy] _hasListeners:@"willPresentScreen"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"willPresentScreen" withObject:[TiAdmobView dictionaryFromInterstitial:ad]];
-}
-
-- (void)interstitialWillDismissScreen:(GADInterstitial *)ad
-{
-  if (![[self proxy] _hasListeners:@"willDismissScreen"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"willDismissScreen" withObject:[TiAdmobView dictionaryFromInterstitial:ad]];
-}
-
-- (void)interstitialDidDismissScreen:(GADInterstitial *)ad
-{
-  TiThreadPerformOnMainThread(
-      ^{
-        [self removeFromSuperview];
-      },
-      NO);
-
-  if (![[self proxy] _hasListeners:@"didDismissScreen"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"didDismissScreen" withObject:[TiAdmobView dictionaryFromInterstitial:ad]];
-}
-
-- (void)interstitialWillLeaveApplication:(GADInterstitial *)ad
-{
-  if (![[self proxy] _hasListeners:@"willLeaveApplication"]) {
-    return;
-  }
-
-  [self.proxy fireEvent:@"willLeaveApplication" withObject:[TiAdmobView dictionaryFromInterstitial:ad]];
+  [self.proxy fireEvent:@"didDismissScreen" withObject:@{ @"adUnitId": adUnitId }];
 }
 
 @end

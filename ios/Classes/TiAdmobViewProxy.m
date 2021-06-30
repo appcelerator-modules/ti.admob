@@ -6,6 +6,7 @@
  */
 
 #import "TiAdmobViewProxy.h"
+#import "TiApp.h"
 #import "TiUtils.h"
 
 @implementation TiAdmobViewProxy
@@ -18,6 +19,21 @@
 - (void)receive:(id)unused
 {
   [[self admobView] initialize];
+}
+
+- (void)showRewardedVideo:(id)args
+{
+  [[self admobView] showRewardedVideo];
+}
+
+- (void)showInterstitial:(id)args
+{
+  [[self admobView] showInterstitial];
+}
+
+- (void)loadRewardedVideo:(id)adUnitId
+{
+  [[self admobView] loadRewardedVideoWithAdUnitID:adUnitId];
 }
 
 @end

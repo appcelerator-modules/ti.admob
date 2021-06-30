@@ -21,6 +21,8 @@ import com.google.ads.consent.ConsentInformation;
 import com.google.ads.consent.ConsentStatus;
 import com.google.ads.consent.DebugGeography;
 import com.google.ads.mediation.admob.AdMobAdapter;
+import com.inmobi.sdk.InMobiSdk;
+import com.google.ads.mediation.inmobi.InMobiConsent;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.identifier.AdvertisingIdClient;
@@ -44,6 +46,8 @@ import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.TiBlob;
 import org.appcelerator.titanium.io.TiBaseFile;
 import org.appcelerator.titanium.util.TiConvert;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 @Kroll.module(name = "Admob", id = "ti.admob")
 public class AdmobModule extends KrollModule
@@ -475,6 +479,29 @@ public class AdmobModule extends KrollModule
 		}
 
 		return result;
+	}
+
+	@Kroll.method
+	public void setInMobi_updateGDPRConsent(boolean isEnable)
+	{		
+		JSONObject consentObject = new JSONObject();
+		try {
+			if (isEnable){
+				consentObject.put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, true);
+				consentObject.put("gdpr", "1");
+				Log.d(TAG, "inMobi GDPR enabled");
+			} else {
+				consentObject.put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, true);
+				consentObject.put("gdpr", "0");
+				Log.d(TAG, "inMobi GDPR disabled");
+			}
+		} catch (JSONException exception) {
+			Log.e(TAG, "inMobi GDPR error");
+			exception.printStackTrace();
+			return;
+		}
+
+		InMobiConsent.updateGDPRConsent(consentObject);
 	}
 
 	public static Bundle mapToBundle(Map<String, Object> map)

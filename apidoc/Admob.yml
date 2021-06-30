@@ -76,6 +76,11 @@ description: |
         </dict>
      </array>
 
+    If you use Facebook Audience Network mediation, starting with iOS 14, you will need to implement the setAdvertiserTrackingEnabled flag.
+    This allows you to inform Facebook whether to use the data to deliver personalized ads. If the flag is set to false, Facebook will not be able to deliver personalized ads.
+    You need to set this flag before initializing the mediation SDK in order to receive it in the bidding request.
+
+
 platforms: [android, iphone, ipad]
 properties:
   - name: CONSENT_STATUS_UNKNOWN
@@ -403,6 +408,22 @@ methods:
         type: Callback<TrackingAuthorizationStatusObject>
         summary: Async callback function to invoke when done
         optional: false
+
+  - name: setAdvertiserTrackingEnabled
+    returns:
+      type: void
+    summary: Sets whether to use the data to deliver personalized ads on Facebook Audience Network mediation.
+    description: |
+            If you use Facebook Audience Network mediation, starting with iOS 14, you will need to implement the setAdvertiserTrackingEnabled flag.
+            This allows you to inform Facebook whether to use the data to deliver personalized ads. If the flag is set to false, Facebook will not 
+            be able to deliver personalized ads.
+    platforms: [iphone, ipad]
+    since: "3.1.0"
+    osver: {ios: {min: "14.0"}}
+    parameters:
+      - name: tag
+        type: Boolean
+        summary: Sets whether to use the data to deliver personalized ads on Facebook Audience Network mediation.
 
 ---
 name: ConsentFormOptions
