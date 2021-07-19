@@ -36,7 +36,7 @@
     "clang-format": "^1.5.0",
     "commitizen": "^4.2.4",
     "danger": "^10.6.4",
-    "eslint": "^7.29.0",
+    "eslint": "^7.31.0",
     "eslint-config-axway": "^6.0.1",
     "eslint-plugin-jasmine": "^4.1.2",
     "husky": "^4.3.6",
